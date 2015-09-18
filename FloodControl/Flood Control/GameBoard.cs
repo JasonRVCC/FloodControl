@@ -13,6 +13,9 @@ using Microsoft.Xna.Framework;
 //-Determining which pieces need to be filled with water.
 //-Returning lists of potenially scoring chains.
 
+
+// 09/18/2015 Animated pieces implemented 
+
 namespace Flood_Control
 {
     class GameBoard
@@ -25,6 +28,15 @@ namespace Flood_Control
         private GamePiece[,] boardSquares = new GamePiece[GameBoardWidth, GameBoardHeight];
 
         private List<Vector2> WaterTracker = new List<Vector2>();
+
+        public Dictionary<string, FallingPiece> fallingPieces =
+           new Dictionary<string, FallingPiece>();
+
+        public Dictionary<string, RotatingPiece> rotatingPieces =
+            new Dictionary<string, RotatingPiece>();
+
+        public Dictionary<string, FadingPiece> fadingPieces =
+           new Dictionary<string, FadingPiece>();
 
         //Create the Game Board
         public GameBoard()
@@ -78,6 +90,7 @@ namespace Flood_Control
         }
 
         //After a scoring chain has been removed, move the above pieces downward
+        // Updated to add falling pieces
         public void FillFromAbove(int x, int y)
         {
             int rowLookup = y - 1;
@@ -88,6 +101,7 @@ namespace Flood_Control
                 {
                     SetSquare(x, y, GetSquare(x, rowLookup));
                     SetSquare(x, rowLookup, "Empty");
+                    AddFallingPiece(x, y, GetSquare(x, y), GamePiece.PieceHeight *(y - rowLookup));
                     rowLookup = -1;
                 }
                 rowLookup--;
@@ -95,6 +109,7 @@ namespace Flood_Control
         }
 
         //Generate new pieces to fill empty squares
+        //Updated to add falling pieces
         public void GenerateNewPieces(bool dropSquares)
         {
             if (dropSquares)
@@ -112,8 +127,11 @@ namespace Flood_Control
             for (int y = 0; y < GameBoardHeight; y++)
                 for (int x = 0; x < GameBoardWidth; x++)
             {
-                if (GetSquare(x,y) == "Empty")
-                    RandomPiece(x,y);
+                if (GetSquare(x, y) == "Empty")
+                {
+                    RandomPiece(x, y);
+                    AddFallingPiece(x, y, GetSquare(x, y), GamePiece.PieceHeight * GameBoardHeight);
+                }
             }
         }
 
@@ -167,6 +185,100 @@ namespace Flood_Control
             WaterTracker.Clear();
             PropagateWater(0, y, "Left");
             return WaterTracker;
+        }
+
+        //Add a falling piece to the board
+        public void AddFallingPiece(int X, int Y, string PieceName, int verticalOffset)
+        {
+            fallingPieces[X.ToString() + "_" + Y.ToString()] = 
+                new FallingPiece(PieceName, verticalOffset);
+        }
+
+        //Add a rotating piece to the board
+        public void AddRotatingPiece(int X, int Y, string PieceName, bool Clockwise)
+        {
+            rotatingPieces[X.ToString() + "_" + Y.ToString()] =
+                new RotatingPiece(PieceName, Clockwise);
+        }
+
+        //Add a fading piece to the board
+        public void AddFadingPiece(int X, int Y, string PieceName)
+        {
+            fadingPieces[X.ToString() + "_" + Y.ToString()] =
+                new FadingPiece(PieceName, "W");
+        }
+
+        //Are there any pieces to animate?
+        public bool ArePiecesAnimating()
+        {
+            if ((fallingPieces.Count == 0) && (rotatingPieces.Count == 0) &&
+                (fadingPieces.Count == 0))
+            { return false; }
+            else
+                return true;
+        }
+
+        //Update animated pieces
+        public void UpdateAnimatedPieces()
+        {
+            if (fadingPieces.Count == 0)
+            {
+                UpdateFallingPieces();
+                UpdateRotatingPieces();
+            }
+            else
+                UpdateFadingPieces();
+        }
+
+        //Update any fading pieces
+        private void UpdateFadingPieces()
+        {
+            Queue<string> RemoveKeys = new Queue<string>();
+
+            foreach (string thisKey in fadingPieces.Keys)
+            {
+                fadingPieces[thisKey].UpdatePiece();
+
+                if (fadingPieces[thisKey].alphaLevel == 0.0f)
+                    RemoveKeys.Enqueue(thisKey.ToString());
+            }
+
+            while (RemoveKeys.Count > 0)
+                fadingPieces.Remove(RemoveKeys.Dequeue());
+        }
+
+        //Update any falling pieces
+        private void UpdateFallingPieces()
+        {
+            Queue<string> RemoveKeys = new Queue<string>();
+
+            foreach (string thisKey in fallingPieces.Keys)
+            {
+                fallingPieces[thisKey].UpdatePiece();
+
+                if (fallingPieces[thisKey].verticalOffset == 0)
+                    RemoveKeys.Enqueue(thisKey.ToString());
+            }
+
+            while (RemoveKeys.Count > 0)
+                fallingPieces.Remove(RemoveKeys.Dequeue());
+        }
+
+        //Update any rotating pieces
+        private void UpdateRotatingPieces()
+        {
+            Queue<string> RemoveKeys = new Queue<string>();
+
+            foreach (string thisKey in rotatingPieces.Keys)
+            {
+                rotatingPieces[thisKey].UpdatePiece();
+
+                if (rotatingPieces[thisKey].rotationTicksRemaining == 0)
+                    RemoveKeys.Enqueue(thisKey.ToString());
+            }
+
+            while (RemoveKeys.Count > 0)
+                rotatingPieces.Remove(RemoveKeys.Dequeue());
         }
     }
 }

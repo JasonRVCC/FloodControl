@@ -12,6 +12,8 @@ using Microsoft.Xna.Framework.Media;
 //Flood Control is puzzle game where players must rotate pipes to drain the water from 
 //one end of the board to the other before time runs out.
 
+// 09/18/2015 Animated pieces implemented
+
 namespace Flood_Control
 {
     /// <summary>
@@ -100,7 +102,7 @@ namespace Flood_Control
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            // TODO: Add your update logic here
+            
 
             switch (gameState)
             {
@@ -117,20 +119,26 @@ namespace Flood_Control
                 case GameStates.Playing:
                     timeSinceLastInput += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-                    if (timeSinceLastInput >= MinTimeSinceLastInput)
+                    if (gameBoard.ArePiecesAnimating())
                     {
-                        HandleMouseInput(Mouse.GetState());
+                        gameBoard.UpdateAnimatedPieces();
                     }
-
-                    gameBoard.ResetWater();
-
-                    for (int y = 0; y < GameBoard.GameBoardHeight; y++)
+                    else
                     {
-                        CheckScoringChain(gameBoard.GetWaterChain(y));
+                        gameBoard.ResetWater();
+
+                        for (int y = 0; y < GameBoard.GameBoardHeight; y++)
+                        {
+                            CheckScoringChain(gameBoard.GetWaterChain(y));
+                        }
+
+                        gameBoard.GenerateNewPieces(true);
+
+                        if (timeSinceLastInput >= MinTimeSinceLastInput)
+                        {
+                            HandleMouseInput(Mouse.GetState());
+                        }
                     }
-
-                    gameBoard.GenerateNewPieces(true);
-
                     break;
             }
 
@@ -168,13 +176,34 @@ namespace Flood_Control
                         int pixelX = (int)gameBoardDisplayOrigin.X + (x * GamePiece.PieceWidth);
                         int pixelY = (int)gameBoardDisplayOrigin.Y + (y * GamePiece.PieceHeight);
 
-                        spriteBatch.Draw(playingPieces, new Rectangle(pixelX, pixelY, 
-                            GamePiece.PieceWidth, GamePiece.PieceHeight), EmptyPiece, 
-                            Color.White);
+                        DrawEmptyPiece(pixelX, pixelY);
 
-                        spriteBatch.Draw(playingPieces, new Rectangle(pixelX, pixelY, 
-                            GamePiece.PieceWidth, GamePiece.PieceHeight), 
-                            gameBoard.GetSourceRect(x,y), Color.White);
+                        bool pieceDrawn = false;
+
+                        string positionName = x.ToString() + "_" + y.ToString();
+
+                        if (gameBoard.rotatingPieces.ContainsKey(positionName))
+                        {
+                            DrawRotatingPiece(pixelX, pixelY, positionName);
+                            pieceDrawn = true;
+                        }
+
+                        if (gameBoard.fadingPieces.ContainsKey(positionName))
+                        {
+                            DrawFadingPiece(pixelX, pixelY, positionName);
+                            pieceDrawn = true;
+                        }
+
+                        if (gameBoard.fallingPieces.ContainsKey(positionName))
+                        {
+                            DrawFallingPiece(pixelX, pixelY, positionName);
+                            pieceDrawn = true;
+                        }
+
+                        if (!pieceDrawn)
+                        {
+                            DrawStandardPiece(x, y, pixelX, pixelY);
+                        }
                     }
 
                 this.Window.Title = playerScore.ToString();
@@ -192,6 +221,7 @@ namespace Flood_Control
         }
 
         //Check to see if a successfully scoring chain was made
+        //Up dated to add fading pieces
         private void CheckScoringChain(List<Vector2> waterChain)
         {
             if (waterChain.Count > 0)
@@ -206,6 +236,9 @@ namespace Flood_Control
 
                         foreach (Vector2 ScoringSquare in waterChain)
                         {
+                            gameBoard.AddFadingPiece((int)ScoringSquare.X, (int)ScoringSquare.Y,
+                                gameBoard.GetSquare((int)ScoringSquare.X, (int)ScoringSquare.Y));
+
                             gameBoard.SetSquare((int)ScoringSquare.X, (int)ScoringSquare.Y,
                                 "Empty");
                         }
@@ -215,6 +248,7 @@ namespace Flood_Control
         }
 
         //Method for handling mouse inputs
+        //Updated to add rotating pieces
         private void HandleMouseInput(MouseState mouseState)
         {
             int x = ((mouseState.X - (int)gameBoardDisplayOrigin.X) / GamePiece.PieceWidth);
@@ -226,17 +260,61 @@ namespace Flood_Control
             {
                 if (mouseState.LeftButton == ButtonState.Pressed)
                 {
+                    gameBoard.AddRotatingPiece(x, y, gameBoard.GetSquare(x, y), false);
                     gameBoard.RotatePiece(x,y, false);
                     timeSinceLastInput = 0.0f;
                 }
 
                 if (mouseState.RightButton == ButtonState.Pressed)
                 {
+                    gameBoard.AddRotatingPiece(x, y, gameBoard.GetSquare(x, y), true);
                     gameBoard.RotatePiece(x,y, true);
                     timeSinceLastInput = 0.0f;
                 }
             }
         }
 
+        //Draw an empty piece
+        private void DrawEmptyPiece(int pixelX, int pixelY)
+        {
+            spriteBatch.Draw(playingPieces, new Rectangle(pixelX, pixelY,
+                GamePiece.PieceWidth, GamePiece.PieceHeight), EmptyPiece, Color.White); 
+        }
+
+        //Draw a standard piece
+        private void DrawStandardPiece(int x, int y, int pixelX, int pixelY)
+        {
+            spriteBatch.Draw(playingPieces, new Rectangle(pixelX, pixelY,
+                GamePiece.PieceWidth, GamePiece.PieceHeight), gameBoard.GetSourceRect(x, y),
+                Color.White);
+        }
+
+        //Draw a falling piece
+        private void DrawFallingPiece(int pixelX, int pixelY, string positionName)
+        {
+            spriteBatch.Draw(playingPieces, new Rectangle(pixelX, pixelY - 
+                gameBoard.fallingPieces[positionName].verticalOffset,
+                GamePiece.PieceWidth, GamePiece.PieceHeight), 
+                gameBoard.fallingPieces[positionName].GetSourceRect(), Color.White);
+        }
+
+        //Draw a fading piece
+        private void DrawFadingPiece(int pixelX, int pixelY, string positionName)
+        {
+            spriteBatch.Draw(playingPieces, new Rectangle(pixelX, pixelY, GamePiece.PieceWidth, 
+                GamePiece.PieceHeight), gameBoard.fadingPieces[positionName].GetSourceRect(), 
+                Color.White * gameBoard.fadingPieces[positionName].alphaLevel);
+        }
+
+        //Draw a rotating piece
+        private void DrawRotatingPiece(int pixelX, int pixelY, string positionName)
+        {
+            spriteBatch.Draw(playingPieces, new Rectangle(pixelX + (GamePiece.PieceWidth / 2), 
+                pixelY + (GamePiece.PieceHeight / 2), GamePiece.PieceWidth, GamePiece.PieceHeight), 
+                gameBoard.rotatingPieces[positionName].GetSourceRect(),
+                Color.White, gameBoard.rotatingPieces[positionName].RotationAmount,
+                new Vector2(GamePiece.PieceWidth / 2, GamePiece.PieceHeight / 2),
+                SpriteEffects.None, 0.0f);
+        }
     }
 }
