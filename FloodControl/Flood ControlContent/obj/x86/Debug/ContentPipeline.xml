@@ -7,8 +7,8 @@
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
       <Options>None</Options>
-      <Output>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood Control\bin\x86\Debug\Content\Textures\Background.xnb</Output>
-      <Time>2015-09-11T10:03:13.4422436-04:00</Time>
+      <Output>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood Control\bin\x86\Debug\Content\Textures\Background.xnb</Output>
+      <Time>2015-09-18T10:52:10.1630333-04:00</Time>
     </Item>
     <Item>
       <Source>Textures\Tile_Sheet.png</Source>
@@ -16,8 +16,8 @@
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
       <Options>None</Options>
-      <Output>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood Control\bin\x86\Debug\Content\Textures\Tile_Sheet.xnb</Output>
-      <Time>2015-09-11T10:03:13.4622456-04:00</Time>
+      <Output>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood Control\bin\x86\Debug\Content\Textures\Tile_Sheet.xnb</Output>
+      <Time>2015-09-18T10:52:10.1650335-04:00</Time>
     </Item>
     <Item>
       <Source>Textures\TitleScreen.png</Source>
@@ -25,8 +25,8 @@
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
       <Options>None</Options>
-      <Output>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood Control\bin\x86\Debug\Content\Textures\TitleScreen.xnb</Output>
-      <Time>2015-09-11T10:03:13.4652459-04:00</Time>
+      <Output>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood Control\bin\x86\Debug\Content\Textures\TitleScreen.xnb</Output>
+      <Time>2015-09-18T10:52:10.1680338-04:00</Time>
     </Item>
     <BuildSuccessful>true</BuildSuccessful>
     <Settings>
@@ -34,10 +34,10 @@
       <TargetProfile>HiDef</TargetProfile>
       <BuildConfiguration>Debug</BuildConfiguration>
       <CompressContent>false</CompressContent>
-      <RootDirectory>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood ControlContent\</RootDirectory>
-      <LoggerRootDirectory>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood Control\</LoggerRootDirectory>
-      <IntermediateDirectory>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood ControlContent\obj\x86\Debug\</IntermediateDirectory>
-      <OutputDirectory>C:\Visual Studio 2012\Projects\Flood Control\Flood Control\Flood Control\bin\x86\Debug\Content\</OutputDirectory>
+      <RootDirectory>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood ControlContent\</RootDirectory>
+      <LoggerRootDirectory>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood Control\</LoggerRootDirectory>
+      <IntermediateDirectory>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood ControlContent\obj\x86\Debug\</IntermediateDirectory>
+      <OutputDirectory>C:\Users\G00136378\Desktop\GitHub\FloodControl\FloodControl\Flood Control\bin\x86\Debug\Content\</OutputDirectory>
     </Settings>
     <Assemblies>
       <Assembly>

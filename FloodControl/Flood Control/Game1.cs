@@ -200,12 +200,15 @@ namespace Flood_Control
 
                 if (LastPipe.X == GameBoard.GameBoardWidth - 1)
                 {
-                    playerScore += DetermineScore(waterChain.Count);
-
-                    foreach (Vector2 ScoringSquare in waterChain)
+                    if (gameBoard.HasConnector((int)LastPipe.X, (int)LastPipe.Y, "Right"))
                     {
-                        gameBoard.SetSquare((int)ScoringSquare.X, (int)ScoringSquare.Y,
-                            "Empty");
+                        playerScore += DetermineScore(waterChain.Count);
+
+                        foreach (Vector2 ScoringSquare in waterChain)
+                        {
+                            gameBoard.SetSquare((int)ScoringSquare.X, (int)ScoringSquare.Y,
+                                "Empty");
+                        }
                     }
                 }
             }
