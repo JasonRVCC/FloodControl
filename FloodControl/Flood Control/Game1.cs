@@ -23,6 +23,7 @@ namespace Flood_Control
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        SpriteFont pericles36Font;
 
         Texture2D playingPieces;
         Texture2D backgroundScreen;
@@ -31,16 +32,41 @@ namespace Flood_Control
         GameBoard gameBoard;
 
         Vector2 gameBoardDisplayOrigin = new Vector2(70, 89);
+        Vector2 scorePosition = new Vector2(605, 215);
+
+        Queue<ScoreZoom> ScoreZooms = new Queue<ScoreZoom>();
 
         int playerScore = 0;
 
-        enum GameStates { TitleScreen, Playing };
+        enum GameStates { TitleScreen, Playing, GameOver };
         GameStates gameState = GameStates.TitleScreen;
+        
+        Vector2 gameOverLocation = new Vector2(200, 260);
+        float gameOverTimer;
 
         Rectangle EmptyPiece = new Rectangle(1, 247, 40, 40);
 
         const float MinTimeSinceLastInput = 0.25f;
         float timeSinceLastInput = 0.0f;
+
+        const float MaxFloodCounter = 100.0f;
+        float floodCount = 0.0f;
+        float timeSinceLastFloodIncrease = 0.0f;
+        float timeBetweenFloodIncreases = 1.0f;
+        float floodIncreaseAmount = 0.5f;
+
+        const int MaxWaterHeight = 244;
+        const int WaterWidth = 297;
+
+        Vector2 waterOverlayStart = new Vector2(85, 245);
+        Vector2 waterPostion = new Vector2(478, 338);
+
+        int currentLevel = 0;
+        int linesCompletedThisLevel = 0;
+
+        const float floodAccelerationPerLevel = 0.5f;
+
+        Vector2 levelTextPosition = new Vector2(512, 215);
 
         public Game1()
         {
@@ -80,6 +106,7 @@ namespace Flood_Control
             playingPieces = Content.Load<Texture2D>(@"Textures\Tile_Sheet");
             backgroundScreen = Content.Load<Texture2D>(@"Textures\Background");
             titleScreen = Content.Load<Texture2D>(@"Textures\TitleScreen");
+            pericles36Font = Content.Load<SpriteFont>(@"Fonts\Pericles36");
         }
 
         /// <summary>
@@ -112,12 +139,27 @@ namespace Flood_Control
                         gameBoard.ClearBoard();
                         gameBoard.GenerateNewPieces(false);
                         playerScore = 0;
+                        currentLevel = 0;
+                        floodIncreaseAmount = 0.0f;
+                        StartNewLevel();
                         gameState = GameStates.Playing;
                     }
                     break;
 
                 case GameStates.Playing:
                     timeSinceLastInput += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    timeSinceLastFloodIncrease += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                    if (timeSinceLastFloodIncrease >= timeBetweenFloodIncreases)
+                    {
+                        floodCount += floodIncreaseAmount;
+                        timeSinceLastFloodIncrease = 0.0f;
+                        if (floodCount >= MaxFloodCounter)
+                        {
+                            gameOverTimer = 8.0f;
+                            gameState = GameStates.GameOver;
+                        }
+                    }
 
                     if (gameBoard.ArePiecesAnimating())
                     {
@@ -138,6 +180,15 @@ namespace Flood_Control
                         {
                             HandleMouseInput(Mouse.GetState());
                         }
+                    }
+                    UpdateScoreZooms();
+                    break;
+
+                case GameStates.GameOver:
+                    gameOverTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    if (gameOverTimer <= 0)
+                    {
+                        gameState = GameStates.TitleScreen;
                     }
                     break;
             }
@@ -163,7 +214,7 @@ namespace Flood_Control
                 spriteBatch.End();
             }
 
-            if (gameState == GameStates.Playing)
+            if ((gameState == GameStates.Playing) || (gameState == GameStates.GameOver))
             {
                 spriteBatch.Begin();
 
@@ -206,8 +257,38 @@ namespace Flood_Control
                         }
                     }
 
-                this.Window.Title = playerScore.ToString();
+                foreach (ScoreZoom zoom in ScoreZooms)
+                {
+                    spriteBatch.DrawString(pericles36Font, zoom.Text, 
+                        new Vector2(this.Window.ClientBounds.Width/2, 
+                            this.Window.ClientBounds.Height/2), zoom.DrawColor, 0.0f, 
+                            new Vector2(pericles36Font.MeasureString(zoom.Text).X/2, 
+                                pericles36Font.MeasureString(zoom.Text).Y/2), zoom.Scale, 
+                                SpriteEffects.None, 0.0f);
+                }
 
+                spriteBatch.DrawString(pericles36Font, playerScore.ToString(), scorePosition,
+                    Color.Black);
+
+                spriteBatch.DrawString(pericles36Font, currentLevel.ToString(), levelTextPosition,
+                    Color.Black);
+
+                int waterHeight = (int)(MaxWaterHeight * (floodCount/100));
+
+                spriteBatch.Draw(backgroundScreen, new Rectangle((int)waterPostion.X,
+                    (int)waterPostion.Y + (MaxWaterHeight - waterHeight), WaterWidth, waterHeight),
+                    new Rectangle((int)waterOverlayStart.X, (int)waterOverlayStart.Y +
+                        (MaxWaterHeight - waterHeight), WaterWidth, waterHeight),
+                    new Color(255, 255, 255, 180));
+
+                spriteBatch.End();
+            }
+
+            if (gameState == GameStates.GameOver)
+            {
+                spriteBatch.Begin();
+                spriteBatch.DrawString(pericles36Font, "G A M E  O V E R!", gameOverLocation,
+                    Color.Yellow);
                 spriteBatch.End();
             }
 
@@ -234,6 +315,14 @@ namespace Flood_Control
                     {
                         playerScore += DetermineScore(waterChain.Count);
 
+                        linesCompletedThisLevel++;
+
+                        floodCount = MathHelper.Clamp(floodCount -
+                            (DetermineScore(waterChain.Count) / 10), 0.0f, 100.0f);
+
+                        ScoreZooms.Enqueue(new ScoreZoom("+" +
+                            DetermineScore(waterChain.Count).ToString(), new Color(1.0f, 0.0f, 0.4f)));
+
                         foreach (Vector2 ScoringSquare in waterChain)
                         {
                             gameBoard.AddFadingPiece((int)ScoringSquare.X, (int)ScoringSquare.Y,
@@ -242,6 +331,9 @@ namespace Flood_Control
                             gameBoard.SetSquare((int)ScoringSquare.X, (int)ScoringSquare.Y,
                                 "Empty");
                         }
+
+                        if (linesCompletedThisLevel >= 20)
+                        { StartNewLevel(); }
                     }
                 }
             }
@@ -315,6 +407,31 @@ namespace Flood_Control
                 Color.White, gameBoard.rotatingPieces[positionName].RotationAmount,
                 new Vector2(GamePiece.PieceWidth / 2, GamePiece.PieceHeight / 2),
                 SpriteEffects.None, 0.0f);
+        }
+
+        //Update score zooms
+        private void UpdateScoreZooms()
+        {
+            int dequeueCounter = 0;
+            foreach (ScoreZoom zoom in ScoreZooms)
+            {
+                zoom.Update();
+                if (zoom.IsCompleted)
+                {dequeueCounter++;}
+            }
+            for (int d = 0; d < dequeueCounter; d++)
+            {ScoreZooms.Dequeue();}
+        }
+
+        //Begin the next level
+        private void StartNewLevel()
+        {
+            currentLevel++;
+            floodCount = 0.0f;
+            linesCompletedThisLevel = 0;
+            floodIncreaseAmount += floodAccelerationPerLevel;
+            gameBoard.ClearBoard();
+            gameBoard.GenerateNewPieces(false);
         }
     }
 }
